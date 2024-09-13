@@ -34,89 +34,142 @@ const initializePage = () => {
   const resultsDiv = document.createElement('div');
   resultsDiv.classList.add('results');
   
+  const searchHistory = document.createElement('div');
+  searchHistory.classList.add('search-history');
+  searchHistory.innerHTML = '<h4>Search History</h4><ul></ul>';
+  
+  const popularSearches = document.createElement('div');
+  popularSearches.classList.add('popular-searches');
+  popularSearches.innerHTML = '<h4>Popular Searches</h4><ul></ul>';
+  
   const languageSelect = document.createElement('select');
   languageSelect.classList.add('language-select');
-  const languages = [
-    { code: '', name: 'English' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'ar', name: 'Arabic' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ur', name: 'Urdu' }
-  ];
-  languages.forEach(lang => {
-    const option = document.createElement('option');
-    option.value = lang.code;
-    option.textContent = lang.name;
-    languageSelect.appendChild(option);
-  });
-
+  languageSelect.innerHTML = `
+    <option value="en">English</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+    <option value="de">German</option>
+    <option value="it">Italian</option>
+    <option value="pt">Portuguese</option>
+    <option value="ar">Arabic</option>
+    <option value="ur">Urdu</option>
+  `;
+  
   container.appendChild(logoImg);
   container.appendChild(heading);
   container.appendChild(form);
+  container.appendChild(searchHistory);
+  container.appendChild(popularSearches);
   container.appendChild(languageSelect);
+  
   section.appendChild(container);
   section.appendChild(resultsDiv);
   
   body.appendChild(section);
 };
 
-// Call the initialization function to set up the page
+// Initialize the page
 initializePage();
 
-// JavaScript code for handling the form submission and fetching data
-const url = 'https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=20&format=json&origin=*&srsearch=';
-
+// Variables for form, results, and language select
 const formDOM = document.querySelector('.form');
 const inputDOM = document.querySelector('.form-input');
 const resultsDOM = document.querySelector('.results');
-const languageSelectDOM = document.querySelector('.language-select');
+const searchHistoryList = document.querySelector('.search-history ul');
+const popularSearchesList = document.querySelector('.popular-searches ul');
+const languageSelect = document.querySelector('.language-select');
 
-const fetchPages = async (searchValue, langCode = '') => {
-  const language = langCode ? `&uselang=${langCode}` : '';
+// Search history storage
+const searchHistory = new Set();
+
+// Add event listener to the form
+formDOM.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = inputDOM.value;
+  const language = languageSelect.value;
+  if (!value) {
+    resultsDOM.innerHTML = '<div class="error">Please enter a valid search term.</div>';
+    return;
+  }
+
+  // Add search to history
+  if (!searchHistory.has(value)) {
+    searchHistory.add(value);
+    const li = document.createElement('li');
+    li.textContent = value;
+    li.addEventListener('click', () => {
+      inputDOM.value = value;
+      fetchPages(value, language);
+    });
+    searchHistoryList.appendChild(li);
+  }
+
+  fetchPages(value, language);
+});
+
+// Function to fetch pages
+const fetchPages = async (searchValue, language) => {
   resultsDOM.innerHTML = '<div class="loading"></div>';
   try {
-    const response = await fetch(`${url}${searchValue}${language}`);
+    const response = await fetch(`https://${language}.wikipedia.org/w/api.php?action=query&list=search&srlimit=20&format=json&origin=*&srsearch=${searchValue}`);
     const data = await response.json();
     const results = data.query.search;
     if (results.length < 1) {
       resultsDOM.innerHTML = '<div class="error">No matching results were found. Please try again.</div>';
       return;
     }
-    renderResults(results);
+    renderResults(results, searchValue);
   } catch (error) {
     resultsDOM.innerHTML = '<div class="error">There was an error...</div>';
   }
 };
 
-const renderResults = (list) => {
+// Function to render results
+const renderResults = (list, searchValue) => {
   const cardsList = list
     .map((item) => {
       const { title, snippet, pageid } = item;
-      return `<a href="http://en.wikipedia.org/?curid=${pageid}" target="_blank">
+      const highlightedSnippet = snippet.replace(
+        new RegExp(searchValue, 'gi'),
+        match => `<span class="highlight">${match}</span>`
+      );
+      return `<a href="https://en.wikipedia.org/?curid=${pageid}" target="_blank">
             <h4>${title}</h4>
-            <p>${snippet}</p>
+            <p>${highlightedSnippet}</p>
           </a>`;
     })
     .join('');
   resultsDOM.innerHTML = `<div class="articles">${cardsList}</div>`;
 };
 
-formDOM.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const value = inputDOM.value;
-  const langCode = languageSelectDOM.value;
-  if (!value) {
-    resultsDOM.innerHTML = '<div class="error">Please enter a valid search term.</div>';
-    return;
+// Function to fetch search suggestions from Wikipedia
+const fetchSearchSuggestions = async (query) => {
+  try {
+    const response = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${query}&limit=5&format=json&origin=*`);
+    const data = await response.json();
+    return data[1]; // data[1] contains the search suggestions
+  } catch (error) {
+    console.error('Error fetching search suggestions:', error);
+    return []; // Return an empty array in case of an error
   }
-  fetchPages(value, langCode);
-});
+};
 
-languageSelectDOM.addEventListener('change', () => {
-  const value = inputDOM.value;
-  const langCode = languageSelectDOM.value;
-  if (value) {
-    fetchPages(value, langCode);
-  }
+// Function to initialize additional features
+const initializeFeatures = async () => {
+  // Fetch and render search suggestions for a generic query (e.g., "Technology")
+  const searchSuggestions = await fetchSearchSuggestions('Technology');
+  searchSuggestions.forEach(suggestion => {
+    const li = document.createElement('li');
+    li.textContent = suggestion;
+    li.addEventListener('click', () => {
+      inputDOM.value = suggestion;
+      fetchPages(suggestion, languageSelect.value);
+    });
+    popularSearchesList.appendChild(li);
+  });
+};
+
+// Initialize features after page load
+window.addEventListener('load', () => {
+  initializeFeatures();
 });

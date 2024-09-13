@@ -395,6 +395,31 @@ input:checked + .slider:before {
 .dark-mode .error {
   color: var(--red-light);
 }
+/* General styles for UL elements */
+ul {
+  list-style-type: none; /* Remove default bullet points */
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+}
+
+/* Styles for the list items to display them in a row */
+ul {
+  display: flex;
+  flex-wrap: wrap; /* Allows items to wrap to the next line if there's not enough space */
+}
+
+li {
+  margin: 0.5rem; /* Add some spacing between items */
+  padding: 0.5rem 1rem; /* Add padding for better spacing */
+  background-color: var(--primary-200); /* Background color for the list items */
+  border-radius: var(--borderRadius); /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background-color var(--transition); /* Smooth background color transition */
+}
+
+li:hover {
+  background-color: var(--primary-300); /* Change background color on hover */
+}
 
 @media screen and (min-width: 768px) {
   .articles {
