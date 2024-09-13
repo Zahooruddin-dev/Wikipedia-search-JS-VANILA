@@ -82,31 +82,6 @@ const languageSelect = document.querySelector('.language-select');
 // Search history storage
 const searchHistory = new Set();
 
-// Add event listener to the form
-formDOM.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const value = inputDOM.value;
-  const language = languageSelect.value;
-  if (!value) {
-    resultsDOM.innerHTML = '<div class="error">Please enter a valid search term.</div>';
-    return;
-  }
-
-  // Add search to history
-  if (!searchHistory.has(value)) {
-    searchHistory.add(value);
-    const li = document.createElement('li');
-    li.textContent = value;
-    li.addEventListener('click', () => {
-      inputDOM.value = value;
-      fetchPages(value, language);
-    });
-    searchHistoryList.appendChild(li);
-  }
-
-  fetchPages(value, language);
-});
-
 // Function to fetch pages
 const fetchPages = async (searchValue, language) => {
   resultsDOM.innerHTML = '<div class="loading"></div>';
@@ -168,6 +143,40 @@ const initializeFeatures = async () => {
     popularSearchesList.appendChild(li);
   });
 };
+
+// Add event listener to the form
+formDOM.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = inputDOM.value;
+  const language = languageSelect.value;
+  if (!value) {
+    resultsDOM.innerHTML = '<div class="error">Please enter a valid search term.</div>';
+    return;
+  }
+
+  // Add search to history
+  if (!searchHistory.has(value)) {
+    searchHistory.add(value);
+    const li = document.createElement('li');
+    li.textContent = value;
+    li.addEventListener('click', () => {
+      inputDOM.value = value;
+      fetchPages(value, language);
+    });
+    searchHistoryList.appendChild(li);
+  }
+
+  fetchPages(value, language);
+});
+
+// Add event listener to the language select
+languageSelect.addEventListener('change', () => {
+  const value = inputDOM.value;
+  const language = languageSelect.value;
+  if (value) {
+    fetchPages(value, language);
+  }
+});
 
 // Initialize features after page load
 window.addEventListener('load', () => {
