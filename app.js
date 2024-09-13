@@ -34,6 +34,7 @@ const initializePage = () => {
   const resultsDiv = document.createElement('div');
   resultsDiv.classList.add('results');
   
+ 
   container.appendChild(logoImg);
   container.appendChild(heading);
   container.appendChild(form);
